@@ -21,21 +21,35 @@ debugObject.createSphere = () =>
 }
 
 debugObject.createBox = () =>
+{
+    createBox(
+        Math.random(),
+        Math.random(),
+        Math.random(),
+            {
+            x: (Math.random() - 0.5) * 3,
+            y: 3,
+            z: (Math.random() - 0.5) * 3
+        })
+}
+
+debugObject.reset = () =>
+{
+    for (const object of objectsToUpdate)
     {
-        createBox(
-            Math.random(),
-            Math.random(),
-            Math.random(),
-             {
-                x: (Math.random() - 0.5) * 3,
-                y: 3,
-                z: (Math.random() - 0.5) * 3
-            })
+        // Remove Body
+        object.body.removeEventListener('collide', playHitSound)
+        world.removeBody(object.body)
+
+        // Remove Mesh
+        scene.remove(object.mesh)
     }
+    objectsToUpdate.splice(0, objectsToUpdate.length)
+}
 
 gui.add(debugObject, 'createSphere')
 gui.add(debugObject, 'createBox')
-
+gui.add(debugObject, 'reset')
 /**
  * Base
  */
@@ -49,6 +63,11 @@ const scene = new THREE.Scene()
  * Physics
  */
 const world = new CANNON.World()
+
+// Huge performance optimizations
+// sleepSpeedLimit and sleepTimeLimit can be changed if desired
+world.broadphase = new CANNON.SAPBroadphase(world)
+world.allowSleep = true
 
 world.gravity.set(0, -9.82, 0)
 
@@ -72,6 +91,24 @@ world.addBody(floorBody)
 world.defaultContactMaterial = defaultContactMaterial
 
 floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(-1, 0, 0), Math.PI * 0.5)
+
+/**
+ * Sounds
+ */
+const hitSound = new Audio('/sounds/hit.mp3')
+
+const playHitSound = (collision) =>
+{
+    const impactStrength = collision.contact.getImpactVelocityAlongNormal()
+    console.log(impactStrength)
+
+    
+    if (impactStrength > 1.5){
+        hitSound.volume = Math.random()
+        hitSound.currentTime = 0
+        hitSound.play()
+    }
+}
 
 
 /**
@@ -203,6 +240,7 @@ const createSphere = (radius, position) =>
     })
 
     body.position.copy(position)
+    body.addEventListener('collide', playHitSound)
     world.addBody(body)
 
     //Save in objectsToUpdate, need mesh and body
@@ -243,6 +281,7 @@ const createBox = (width, height, depth, position) =>
     })
 
     body.position.copy(position)
+    body.addEventListener('collide', playHitSound)
     world.addBody(body)
 
     objectsToUpdate.push({
