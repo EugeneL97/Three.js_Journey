@@ -31,7 +31,13 @@ gltfLoader.load(
     '/models/hamburger.glb',
     (gltf) =>
     {
-        scene.add(gltf.scene)
+        const model = gltf.scene
+        
+        model.scale.set(25, 25, 25)
+
+        model.position.set(0, 0, 0)
+        
+        scene.add(model)
     }
 )
 
